@@ -1,0 +1,80 @@
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.axis.AxisFault;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.sakaiproject.component.cover.ComponentManager;
+import org.sakaiproject.site.api.Site;
+import org.sakaiproject.site.api.SiteService.SelectionType;
+import org.sakaiproject.site.cover.SiteService;
+import org.sakaiproject.tool.api.Session;
+import org.sakaiproject.tool.api.SessionManager;
+import org.sakaiproject.user.api.User;
+import org.sakaiproject.user.api.UserDirectoryService;
+
+
+public class RemoteReportCourses {
+
+	private SessionManager sessionManager;
+	
+	private SiteService siteService;
+	
+	private UserDirectoryService userDirectoryService;
+	
+	private static final Log LOG = LogFactory.getLog(RemoteReportCourses.class);
+	
+	public RemoteReportCourses() {
+		sessionManager = (SessionManager) ComponentManager.get(SessionManager.class.getName());
+		siteService = (SiteService) ComponentManager.get(SiteService.class.getName());
+		userDirectoryService = (UserDirectoryService) ComponentManager.get(UserDirectoryService.class.getName());
+	}
+	
+	/** 
+	  * Gets the session related to the given sessionid or gets the current Session, if any.
+	  * @param sessionid   the id of the session to retrieve. Null to get the current session
+	  * @return    the session, if it is active 
+	  * @throws AxisFault    if session is inactive 
+	  */ 
+	private Session establishSession(String sessionid) throws AxisFault {
+		Session session = null;
+		if (sessionid != null) {
+			session = sessionManager.getSession(sessionid);
+		} else {
+			session = sessionManager.getCurrentSession();
+		}
+		if (session == null) {
+			throw new AxisFault("There is not an active session."); 
+		}
+		session.setActive(); 
+		sessionManager.setCurrentSession(session); 
+		return session; 
+	}
+	
+	/** 
+	  * Verifies if the user is valid.
+	  */
+	private void verifyUser() throws AxisFault {
+        User user = userDirectoryService.getCurrentUser();
+		// 'registered' for faculty, 'guest' for the students
+		if (!"registered".equals(user.getType())) {
+			throw new AxisFault("The user is not valid."); 
+		}
+	}
+	
+	public String[] getAllSitesTitle(String sessionid) throws AxisFault {
+		//establishSession(sessionid);
+		//verifyUser();
+		List<Site> allSites = siteService.getSites(SelectionType.ANY, null, null, null, null, null);
+		List<String> titlesList = new ArrayList<String>();
+		for (Site site : allSites) {
+			if (site.getType() != null && site.getType().equals("course")) {
+				titlesList.add(site.getTitle());
+			}
+		}
+		String[] titles = new String[titlesList.size()];
+		titlesList.toArray(titles);
+		return titles;
+	}
+	
+}
