@@ -121,7 +121,9 @@
 							if (!isAdmin) {
 								document.forms["rrForm"]["course.period"].options.length = 0;
 								for (i = 0; i < data.membership_collection.length; i++) {
-									if (data.membership_collection[i].memberRole == 'Instructor') {
+									if (data.membership_collection[i].memberRole == 'Instructor'
+											|| data.membership_collection[i].memberRole == 'LocalAdmin1'
+											|| data.membership_collection[i].memberRole == 'LocalAdmin2') {
 										allowed = true;
 										jQuery.ajax({
 											url: "/direct" + data.membership_collection[i].locationReference + ".json",
